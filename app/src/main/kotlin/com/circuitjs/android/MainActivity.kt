@@ -135,16 +135,7 @@ class MainActivity : AppCompatActivity() {
 
         applyKeepScreenOn(prefs.getBoolean("keep_on", true))
 
-        if (savedInstanceState == null) {
-            webView.loadUrl("$ASSET_ORIGIN/assets/www/circuitjs.html")
-        } else {
-            webView.restoreState(savedInstanceState)
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        webView.saveState(outState)
+        webView.loadUrl("$ASSET_ORIGIN/assets/www/circuitjs.html")
     }
 
     override fun onResume() {
@@ -153,14 +144,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        // Autosave so the circuit survives the app being killed in the background.
-        if (simLoaded) {
-            webView.evaluateJavascript("(window.CircuitJS1 ? CircuitJS1.exportCircuit() : null)") { r ->
-                decodeJsString(r)?.takeIf { it.isNotBlank() }?.let {
-                    runCatching { autosaveFile.writeText(it) }
-                }
-            }
-        }
         webView.onPause()
         super.onPause()
     }
@@ -369,9 +352,23 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 simLoaded = true
                 progress.hide()
-                restoreAutosave()
             }
         }
+
+        /** Current circuit, written by android-bridge.js whenever it changes. */
+        @JavascriptInterface
+        fun autosave(text: String) {
+            runCatching {
+                val tmp = File(filesDir, "autosave.tmp")
+                tmp.writeText(text)
+                tmp.renameTo(autosaveFile)
+            }
+        }
+
+        /** Read synchronously by android-bridge.js before the simulator starts. */
+        @JavascriptInterface
+        fun getAutosave(): String =
+            runCatching { if (autosaveFile.exists()) autosaveFile.readText() else "" }.getOrDefault("")
 
         @JavascriptInterface
         fun onRunState(running: Boolean) {
@@ -389,11 +386,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ------------------------------------------------------------------- helpers
-
-    private fun restoreAutosave() {
-        val text = runCatching { autosaveFile.takeIf { it.exists() }?.readText() }.getOrNull()
-        if (!text.isNullOrBlank()) js("CircuitJS1.importCircuit(${jsString(text)}, false)")
-    }
 
     private fun importFromUri(uri: Uri) {
         val text = runCatching {

@@ -1,6 +1,28 @@
 // Glue between the CircuitJS web app and the Android shell (MainActivity.kt).
 (function () {
+  var NATIVE = window.AndroidBridge;
   var A = window.AndroidBridge || { onRunState: function(){}, onSimLoaded: function(){}, saveBase64: function(){} };
+
+  // Restore the last circuit: the simulator reads window.startCircuitText as its first circuit,
+  // so nothing can overwrite it afterwards.
+  var lastSaved = null;
+  try {
+    var saved = NATIVE && NATIVE.getAutosave && NATIVE.getAutosave();
+    if (saved) { window.startCircuitText = saved; lastSaved = saved; }
+  } catch (e) {}
+
+  // Continuously keep the native autosave file in sync (also after files are opened).
+  function autosaveTick() {
+    try {
+      var sim = window.CircuitJS1;
+      if (!sim || !NATIVE || !NATIVE.autosave) return;
+      var t = sim.exportCircuit();
+      if (t && t !== lastSaved) { lastSaved = t; NATIVE.autosave(t); }
+    } catch (e) {}
+  }
+  setInterval(autosaveTick, 1000);
+  document.addEventListener('visibilitychange', autosaveTick);
+  window.addEventListener('pagehide', autosaveTick);
 
   // Tell the native toolbar when the simulation starts/stops.
   var lastRunning = null;
@@ -68,10 +90,10 @@
 
     var css = document.createElement('style');
     css.textContent =
-      ':root{--pal-bg:#f1f3f5;--pal-fg:#1a1c1e;--pal-chip:#fff;--pal-line:#b8bec5;--pal-acc:#0E7490}' +
+      ':root{--pal-bg:#ffffff;--pal-fg:#1a1c1e;--pal-chip:#f1f3f5;--pal-line:#c4c9ce;--pal-acc:#0E7490}' +
       '@media(prefers-color-scheme:dark){:root{--pal-bg:#23272b;--pal-fg:#e6e8ea;--pal-chip:#33393e;--pal-line:#4a5258;--pal-acc:#22b8d6}}' +
-      '#cjs-pal{position:fixed;top:0;left:0;right:0;z-index:50;background:var(--pal-bg);color:var(--pal-fg);' +
-      'border-bottom:1px solid var(--pal-line);font:14px Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none}' +
+      '#cjs-pal{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--pal-bg);color:var(--pal-fg);' +
+      'border-top:1px solid var(--pal-line);font:14px Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none}' +
       '#cjs-pal .row{display:flex;gap:6px;overflow-x:auto;padding:6px 8px;scrollbar-width:none;align-items:center}' +
       '#cjs-pal .row::-webkit-scrollbar{display:none}' +
       '#cjs-pal button{flex:none;height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--pal-line);' +
@@ -80,13 +102,13 @@
       '#cjs-pal button.cat{height:30px;border-radius:6px;font-weight:600}' +
       '#cjs-pal button.tog{width:36px;padding:0;border-radius:6px;position:sticky;left:0}' +
       '#cjs-pal.collapsed .items,#cjs-pal.collapsed .cat{display:none}' +
-      'body.cjs-has-pal{position:fixed;left:0;right:0;bottom:0;margin:0}';
+      'body.cjs-has-pal{position:fixed;left:0;right:0;top:0;margin:0}';
     document.head.appendChild(css);
 
     var bar = document.createElement('div'); bar.id = 'cjs-pal';
     var catRow = document.createElement('div'); catRow.className = 'row';
     var itemRow = document.createElement('div'); itemRow.className = 'row items';
-    bar.appendChild(catRow); bar.appendChild(itemRow);
+    bar.appendChild(itemRow); bar.appendChild(catRow);
     document.body.appendChild(bar);
     document.body.classList.add('cjs-has-pal');
 
@@ -95,7 +117,7 @@
     try { collapsed = localStorage.getItem('cjs-pal-collapsed') === '1'; } catch (e) {}
 
     function layout() {
-      document.body.style.top = bar.offsetHeight + 'px';
+      document.body.style.bottom = bar.offsetHeight + 'px';
       window.dispatchEvent(new Event('resize'));   // make the simulator re-measure its canvas
     }
     function renderItems() {
