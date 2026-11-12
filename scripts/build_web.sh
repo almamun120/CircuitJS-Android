@@ -38,6 +38,6 @@ rm -rf "$OUT/WEB-INF" "$OUT"/*.php
 cp -r "$WORK/war/circuitjs1" "$OUT/circuitjs1"
 # Android-specific: native bridge script + mobile viewport in the main page
 cp "$ROOT/android-web/android-bridge.js" "$OUT/android-bridge.js"
-sed -i 's|<head>|<head>\n<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">\n<script src="android-bridge.js"></script>|' "$OUT/circuitjs.html"
+sed -i 's|<head>|<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">\n<script src="android-bridge.js"></script>|' "$OUT/circuitjs.html"
 grep -q android-bridge.js "$OUT/circuitjs.html" || { echo "failed to patch circuitjs.html"; exit 1; }
 echo "Done: $OUT"

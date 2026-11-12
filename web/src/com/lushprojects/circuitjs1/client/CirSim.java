@@ -24,6 +24,7 @@ package com.lushprojects.circuitjs1.client;
 // For information about the theory behind this, see Electronic Circuit & System Simulation Methods by Pillage
 // or https://github.com/sharpie7/circuitjs1/blob/master/INTERNALS.md
 
+import java.util.ArrayList;
 import java.util.Vector;
 import java.util.Arrays;
 import java.util.Collections;
@@ -993,6 +994,7 @@ MouseOutHandler, MouseWheelHandler {
 	var lastTap;
 	var tmout;
 	var lastScale;
+	var startX = 0, startY = 0;
 	
 	cv.addEventListener("touchstart", function (e) {
         	mousePos = getTouchPos(cv, e);
@@ -1011,6 +1013,8 @@ MouseOutHandler, MouseWheelHandler {
   		    }, 500);
   		}
   		lastTap = e.timeStamp;
+  		startX = touch.clientX;
+  		startY = touch.clientY;
   		
   		var touch1 = e.touches[0];
   		var touch2 = e.touches[e.touches.length-1];
@@ -1031,9 +1035,11 @@ MouseOutHandler, MouseWheelHandler {
 	}, false);
 	cv.addEventListener("touchmove", function (e) {
   		e.preventDefault();
-  		clearTimeout(tmout);
   		var touch1 = e.touches[0];
   		var touch2 = e.touches[e.touches.length-1];
+  		// a finger always wobbles a few pixels: only cancel the long-press when it really moves
+  		if (e.touches.length > 1 || Math.hypot(touch1.clientX-startX, touch1.clientY-startY) > 14)
+  		    clearTimeout(tmout);
 	        if (e.touches.length > 1) {
   		    var newScale = Math.hypot(touch1.clientX-touch2.clientX, touch1.clientY-touch2.clientY);
 	            sim.@com.lushprojects.circuitjs1.client.CirSim::zoomCircuit(D)(40*(Math.log(newScale)-Math.log(lastScale)));
@@ -1061,9 +1067,15 @@ MouseOutHandler, MouseWheelHandler {
     
     // this is called twice, once for the Draw menu, once for the right mouse popup menu
     public void composeMainMenu(MenuBar mainMenuBar, int num) {
+    	collectPalette = (num == 0);
+    	if (collectPalette) {
+    	    paletteJson.setLength(0);
+    	    palettePending.clear();
+    	}
     	mainMenuBar.addItem(getClassCheckItem(Locale.LS("Add Wire"), "WireElm"));
     	mainMenuBar.addItem(getClassCheckItem(Locale.LS("Add Resistor"), "ResistorElm"));
 
+    	paletteFlush("Basic");
     	MenuBar passMenuBar = new MenuBar(true);
     	passMenuBar.addItem(getClassCheckItem(Locale.LS("Add Capacitor"), "CapacitorElm"));
     	passMenuBar.addItem(getClassCheckItem(Locale.LS("Add Capacitor (polarized)"), "PolarCapacitorElm"));
@@ -1084,7 +1096,7 @@ MouseOutHandler, MouseWheelHandler {
     	passMenuBar.addItem(getClassCheckItem(Locale.LS("Add Crystal"), "CrystalElm"));
     	passMenuBar.addItem(getClassCheckItem(Locale.LS("Add Photoresistor"), "LDRElm"));
     	passMenuBar.addItem(getClassCheckItem(Locale.LS("Add Thermistor"), "ThermistorNTCElm"));
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Passive Components")), passMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Passive Components")), passMenuBar); paletteFlush("Passive Components");
 
     	MenuBar inputMenuBar = new MenuBar(true);
     	inputMenuBar.addItem(getClassCheckItem(Locale.LS("Add Ground"), "GroundElm"));
@@ -1105,7 +1117,7 @@ MouseOutHandler, MouseWheelHandler {
     	inputMenuBar.addItem(getClassCheckItem(Locale.LS("Add Data Input"), "DataInputElm"));
     	inputMenuBar.addItem(getClassCheckItem(Locale.LS("Add External Voltage (JavaScript)"), "ExtVoltageElm"));
 
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Inputs and Sources")), inputMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Inputs and Sources")), inputMenuBar); paletteFlush("Inputs and Sources");
     	
     	MenuBar outputMenuBar = new MenuBar(true);
     	outputMenuBar.addItem(getClassCheckItem(Locale.LS("Add Analog Output"), "OutputElm"));
@@ -1126,7 +1138,7 @@ MouseOutHandler, MouseWheelHandler {
     	outputMenuBar.addItem(getClassCheckItem(Locale.LS("Add Stop Trigger"), "StopTriggerElm"));
     	outputMenuBar.addItem(getClassCheckItem(Locale.LS("Add DC Motor"), "DCMotorElm"));
     	outputMenuBar.addItem(getClassCheckItem(Locale.LS("Add Wattmeter"), "WattmeterElm"));
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Outputs and Labels")), outputMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Outputs and Labels")), outputMenuBar); paletteFlush("Outputs and Labels");
     	
     	MenuBar activeMenuBar = new MenuBar(true);
     	activeMenuBar.addItem(getClassCheckItem(Locale.LS("Add Diode"), "DiodeElm"));
@@ -1146,7 +1158,7 @@ MouseOutHandler, MouseWheelHandler {
     	activeMenuBar.addItem(getClassCheckItem(Locale.LS("Add Tunnel Diode"), "TunnelDiodeElm"));
     	activeMenuBar.addItem(getClassCheckItem(Locale.LS("Add Triode"), "TriodeElm"));
     	activeMenuBar.addItem(getClassCheckItem(Locale.LS("Add Unijunction Transistor"), "UnijunctionElm"));
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Active Components")), activeMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Active Components")), activeMenuBar); paletteFlush("Active Components");
 
     	MenuBar activeBlocMenuBar = new MenuBar(true);
     	activeBlocMenuBar.addItem(getClassCheckItem(Locale.LS("Add Op Amp (ideal, - on top)"), "OpAmpElm"));
@@ -1171,7 +1183,7 @@ MouseOutHandler, MouseWheelHandler {
     	activeBlocMenuBar.addItem(getClassCheckItem(Locale.LS("Add LM317"), "CustomCompositeElm:~LM317-v2"));
     	activeBlocMenuBar.addItem(getClassCheckItem(Locale.LS("Add TL431"), "CustomCompositeElm:~TL431"));
     	activeBlocMenuBar.addItem(getClassCheckItem(Locale.LS("Add Subcircuit Instance"), "CustomCompositeElm"));
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Active Building Blocks")), activeBlocMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Active Building Blocks")), activeBlocMenuBar); paletteFlush("Active Building Blocks");
     	
     	MenuBar gateMenuBar = new MenuBar(true);
     	gateMenuBar.addItem(getClassCheckItem(Locale.LS("Add Logic Input"), "LogicInputElm"));
@@ -1182,7 +1194,7 @@ MouseOutHandler, MouseWheelHandler {
     	gateMenuBar.addItem(getClassCheckItem(Locale.LS("Add AND Gate"), "AndGateElm"));
     	gateMenuBar.addItem(getClassCheckItem(Locale.LS("Add OR Gate"), "OrGateElm"));
     	gateMenuBar.addItem(getClassCheckItem(Locale.LS("Add XOR Gate"), "XorGateElm"));
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Logic Gates, Input and Output")), gateMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Logic Gates, Input and Output")), gateMenuBar); paletteFlush("Logic Gates, Input and Output");
 
     	MenuBar chipMenuBar = new MenuBar(true);
     	chipMenuBar.addItem(getClassCheckItem(Locale.LS("Add D Flip-Flop"), "DFlipFlopElm"));
@@ -1203,7 +1215,7 @@ MouseOutHandler, MouseWheelHandler {
     	chipMenuBar.addItem(getClassCheckItem(Locale.LS("Add Half Adder"), "HalfAdderElm"));
     	chipMenuBar.addItem(getClassCheckItem(Locale.LS("Add Custom Logic"), "UserDefinedLogicElm")); // don't change this, it will break people's saved shortcuts
     	chipMenuBar.addItem(getClassCheckItem(Locale.LS("Add Static RAM"), "SRAMElm"));
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Digital Chips")), chipMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Digital Chips")), chipMenuBar); paletteFlush("Digital Chips");
     	
     	MenuBar achipMenuBar = new MenuBar(true);
     	achipMenuBar.addItem(getClassCheckItem(Locale.LS("Add 555 Timer"), "TimerElm"));
@@ -1212,12 +1224,12 @@ MouseOutHandler, MouseWheelHandler {
     	achipMenuBar.addItem(getClassCheckItem(Locale.LS("Add ADC"), "ADCElm"));
     	achipMenuBar.addItem(getClassCheckItem(Locale.LS("Add VCO"), "VCOElm"));
     	achipMenuBar.addItem(getClassCheckItem(Locale.LS("Add Monostable"), "MonostableElm"));
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Analog and Hybrid Chips")), achipMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Analog and Hybrid Chips")), achipMenuBar); paletteFlush("Analog and Hybrid Chips");
     	
     	if (subcircuitMenuBar == null)
     	    subcircuitMenuBar = new MenuBar[2];
     	subcircuitMenuBar[num] = new MenuBar(true);
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Subcircuits")), subcircuitMenuBar[num]);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Subcircuits")), subcircuitMenuBar[num]); paletteFlush("Subcircuits");
     	
     	MenuBar otherMenuBar = new MenuBar(true);
     	CheckboxMenuItem mi;
@@ -1231,10 +1243,12 @@ MouseOutHandler, MouseWheelHandler {
     	otherMenuBar.addItem(mi=getClassCheckItem(Locale.LS("Drag Post"), "DragPost"));
     	mi.setShortcut("(" + ctrlMetaKey + "drag)");
 
-    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Drag")), otherMenuBar);
+    	mainMenuBar.addItem(SafeHtmlUtils.fromTrustedString(CheckboxMenuItem.checkBoxHtml+Locale.LS("&nbsp;</div>Drag")), otherMenuBar); paletteFlush("Move");
 
     	mainMenuBar.addItem(mi=getClassCheckItem(Locale.LS("Select/Drag Sel"), "Select"));
     	mi.setShortcut(Locale.LS("(space or Shift-drag)"));
+    	paletteFlush("Move");
+    	collectPalette = false;
     }
     
     void composeSubcircuitMenu() {
@@ -1303,6 +1317,35 @@ MouseOutHandler, MouseWheelHandler {
     
 
 
+    // ---- Draw-menu palette registry (added for the Android wrapper) ----
+    boolean collectPalette = false;
+    ArrayList<String[]> palettePending = new ArrayList<String[]>();
+    StringBuilder paletteJson = new StringBuilder();
+
+    static String jsonEsc(String x) {
+	return x.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    void paletteFlush(String category) {
+	if (collectPalette && !palettePending.isEmpty()) {
+	    if (paletteJson.length() > 0)
+		paletteJson.append(",");
+	    paletteJson.append("{\"name\":\"" + jsonEsc(category) + "\",\"items\":[");
+	    for (int i = 0; i != palettePending.size(); i++) {
+		if (i > 0)
+		    paletteJson.append(",");
+		paletteJson.append("{\"label\":\"" + jsonEsc(palettePending.get(i)[0]) +
+				   "\",\"id\":\"" + jsonEsc(palettePending.get(i)[1]) + "\"}");
+	    }
+	    paletteJson.append("]}");
+	}
+	palettePending.clear();
+    }
+
+    String getPaletteJson() {
+	return "[" + paletteJson.toString() + "]";
+    }
+
     CheckboxMenuItem getClassCheckItem(String s, String t) {
     	// try {
     	//   Class c = Class.forName(t);
@@ -1332,6 +1375,8 @@ MouseOutHandler, MouseWheelHandler {
     	else
     		mi = new CheckboxMenuItem(s, shortcut);
     	mi.setScheduledCommand(new MyCommand("main", t) );
+    	if (collectPalette)
+    	    palettePending.add(new String[] { s.replaceFirst("^Add ", ""), t });
     	mainMenuItems.add(mi);
     	mainMenuItemNames.add(t);
     	return mi;
@@ -6431,6 +6476,9 @@ MouseOutHandler, MouseWheelHandler {
 	        resetSim: $entry(function() { that.@com.lushprojects.circuitjs1.client.CirSim::resetAction()(); } ),
 	        undo: $entry(function() { that.@com.lushprojects.circuitjs1.client.CirSim::doUndo()(); } ),
 	        redo: $entry(function() { that.@com.lushprojects.circuitjs1.client.CirSim::doRedo()(); } ),
+	        getPalette: $entry(function() { return that.@com.lushprojects.circuitjs1.client.CirSim::getPaletteJson()(); } ),
+	        selectTool: $entry(function(id) { that.@com.lushprojects.circuitjs1.client.CirSim::menuPerformed(Ljava/lang/String;Ljava/lang/String;)("main", id); } ),
+	        getActiveTool: $entry(function() { return that.@com.lushprojects.circuitjs1.client.CirSim::mouseModeStr; } ),
 	        // -------------------------------------
 	        getTime: $entry(function() { return that.@com.lushprojects.circuitjs1.client.CirSim::t; } ),
 	        getTimeStep: $entry(function() { return that.@com.lushprojects.circuitjs1.client.CirSim::timeStep; } ),

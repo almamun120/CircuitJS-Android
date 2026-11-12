@@ -10,6 +10,8 @@ Everything around it is native Kotlin / Material 3:
 * Edge-to-edge layout, display-cutout and keyboard insets, light/dark system theme
 * Native dialogs for JS alert/confirm/prompt, file chooser, blob downloads (Export, CSV, audio) → "Save as" picker
 * Back button (exit full screen / press twice to exit), autosave & restore of the current circuit
+* **Touch palette** under the toolbar: every Draw-menu component (133 items) as large scrollable chips grouped by category (Common, Passive, Sources, Outputs, Active, Blocks, Gates, Chips, Analog, Move/Select); tap to pick, then drag on the canvas to place. Collapsible with the ▲ button.
+* Long-press (right-click menu) no longer gets cancelled by small finger wobble
 * Pinch-zoom and drag are handled by the simulator's own touch code; viewport is mobile-sized
 
 ## Layout
