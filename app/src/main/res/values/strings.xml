@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">CircuitJS</string>
+    <string name="run">Run</string>
+    <string name="pause">Pause</string>
+    <string name="reset">Reset</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+    <string name="open_file">Open file…</string>
+    <string name="save_file">Save to file…</string>
+    <string name="share_circuit">Share circuit</string>
+    <string name="keep_screen_on">Keep screen on</string>
+    <string name="fullscreen">Full screen</string>
+    <string name="about">About</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="back_again">Press back again to exit</string>
+    <string name="exit_fullscreen_hint">Press Back to exit full screen</string>
+    <string name="saved">Saved</string>
+    <string name="open_failed">Could not open that file</string>
+    <string name="save_failed">Could not save the file</string>
+    <string name="about_message">CircuitJS1 – electronic circuit simulator by Paul Falstad, Iain Sharp and contributors (GPL v2). This app runs the simulator offline inside an Android wrapper.\n\nTap the ☰ button inside the simulator for components, examples and options. Drag with one finger, pinch with two to zoom.</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/action_run" android:title="@string/pause"
+        android:icon="@drawable/ic_pause" app:showAsAction="always" />
+    <item android:id="@+id/action_reset" android:title="@string/reset"
+        android:icon="@drawable/ic_reset" app:showAsAction="always" />
+    <item android:id="@+id/action_undo" android:title="@string/undo"
+        android:icon="@drawable/ic_undo" app:showAsAction="always" />
+    <item android:id="@+id/action_redo" android:title="@string/redo"
+        android:icon="@drawable/ic_redo" app:showAsAction="always" />
+    <item android:id="@+id/action_open" android:title="@string/open_file" app:showAsAction="never" />
+    <item android:id="@+id/action_save" android:title="@string/save_file" app:showAsAction="never" />
+    <item android:id="@+id/action_share" android:title="@string/share_circuit" app:showAsAction="never" />
+    <item android:id="@+id/action_keep_on" android:title="@string/keep_screen_on"
+        android:checkable="true" android:checked="true" app:showAsAction="never" />
+    <item android:id="@+id/action_fullscreen" android:title="@string/fullscreen" app:showAsAction="never" />
+    <item android:id="@+id/action_about" android:title="@string/about" app:showAsAction="never" />
+</menu>
