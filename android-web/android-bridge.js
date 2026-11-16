@@ -1,7 +1,8 @@
 // Glue between the CircuitJS web app and the Android shell (MainActivity.kt).
 (function () {
   var NATIVE = window.AndroidBridge;
-  var A = window.AndroidBridge || { onRunState: function(){}, onSimLoaded: function(){}, saveBase64: function(){} };
+  var A = window.AndroidBridge || { onRunState: function(){}, onSimLoaded: function(){}, saveBase64: function(){},
+    onTool: function(){}, onPaletteVisible: function(){} };
 
   // Restore the last circuit: the simulator reads window.startCircuitText as its first circuit,
   // so nothing can overwrite it afterwards.
@@ -60,8 +61,10 @@
   document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
   // ------------------------------------------------------------------------------------
-  // Touch palette: every item of the Draw menu as big, scrollable chips at the top.
-  // Data comes from CircuitJS1.getPalette(); tapping a chip calls CircuitJS1.selectTool(id).
+  // Touch palette (bottom sheet). Data comes from CircuitJS1.getPalette(); tapping a chip calls
+  // CircuitJS1.selectTool(id). Fully removed from the layout when hidden (no leftover strip) and the
+  // simulator canvas is re-measured whenever the sheet appears/disappears, so scopes are never cut off.
+  // The most-used tools (Select, Wire, Ground...) also live in the native top bar (MainActivity).
   // ------------------------------------------------------------------------------------
   var CAT_NAMES = {
     'Passive Components': 'Passive', 'Inputs and Sources': 'Sources', 'Outputs and Labels': 'Outputs',
@@ -69,7 +72,7 @@
     'Logic Gates, Input and Output': 'Gates', 'Digital Chips': 'Chips',
     'Analog and Hybrid Chips': 'Analog', 'Move': 'Move / Select'
   };
-  var COMMON = ['Select', 'WireElm', 'ResistorElm', 'CapacitorElm', 'InductorElm', 'GroundElm',
+  var COMMON = ['Select', 'WireElm', 'GroundElm', 'ResistorElm', 'CapacitorElm', 'InductorElm',
     'DCVoltageElm', 'ACVoltageElm', 'SwitchElm', 'DiodeElm', 'LEDElm', 'TransistorElm', 'NTransistorElm',
     'OpAmpElm', 'LogicInputElm', 'LogicOutputElm', 'ProbeElm'];
 
@@ -86,71 +89,100 @@
     });
     cats = cats.filter(function (c) { return c.name !== 'Basic' && c.items.length; });
     var common = COMMON.filter(function (id) { return byId[id]; }).map(function (id) { return byId[id]; });
-    cats.unshift({ name: '\u2605 Common', items: common });
+    cats.unshift({ name: 'Common', items: common });
 
     var css = document.createElement('style');
     css.textContent =
-      ':root{--pal-bg:#ffffff;--pal-fg:#1a1c1e;--pal-chip:#f1f3f5;--pal-line:#c4c9ce;--pal-acc:#0E7490}' +
-      '@media(prefers-color-scheme:dark){:root{--pal-bg:#23272b;--pal-fg:#e6e8ea;--pal-chip:#33393e;--pal-line:#4a5258;--pal-acc:#22b8d6}}' +
+      ':root{--pal-bg:#fbfcfd;--pal-fg:#191c1e;--pal-sub:#5b6770;--pal-chip:#e8eef2;--pal-line:#d5dce1;--pal-acc:#0E7490;--pal-onacc:#fff}' +
+      '@media(prefers-color-scheme:dark){:root{--pal-bg:#1c2125;--pal-fg:#e3e8eb;--pal-sub:#9aa6ae;--pal-chip:#2c343a;--pal-line:#3a444b;--pal-acc:#4fd0e8;--pal-onacc:#00252d}}' +
       '#cjs-pal{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--pal-bg);color:var(--pal-fg);' +
-      'border-top:1px solid var(--pal-line);font:14px Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none}' +
-      '#cjs-pal .row{display:flex;gap:6px;overflow-x:auto;padding:6px 8px;scrollbar-width:none;align-items:center}' +
+      'border-top:1px solid var(--pal-line);box-shadow:0 -3px 14px rgba(0,0,0,.14);' +
+      'font:500 14px Roboto,system-ui,Arial,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}' +
+      '#cjs-pal.hidden{display:none}' +
+      '#cjs-pal .row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;align-items:center}' +
       '#cjs-pal .row::-webkit-scrollbar{display:none}' +
-      '#cjs-pal button{flex:none;height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--pal-line);' +
-      'background:var(--pal-chip);color:var(--pal-fg);font:inherit;white-space:nowrap}' +
-      '#cjs-pal button.sel{background:var(--pal-acc);border-color:var(--pal-acc);color:#fff}' +
-      '#cjs-pal button.cat{height:30px;border-radius:6px;font-weight:600}' +
-      '#cjs-pal button.tog{width:36px;padding:0;border-radius:6px;position:sticky;left:0}' +
-      '#cjs-pal.collapsed .items,#cjs-pal.collapsed .cat{display:none}' +
+      '#cjs-pal .tabs{padding:6px 4px 2px 10px;gap:2px}' +
+      '#cjs-pal .items{padding:6px 10px 10px}' +
+      '#cjs-pal button{flex:none;font:inherit;color:var(--pal-fg);border:0;white-space:nowrap;background:transparent}' +
+      '#cjs-pal .tab{height:30px;padding:0 12px;border-radius:15px;color:var(--pal-sub);font-size:13px;font-weight:600}' +
+      '#cjs-pal .tab.sel{background:var(--pal-chip);color:var(--pal-fg)}' +
+      '#cjs-pal .chip{height:42px;padding:0 16px;border-radius:12px;background:var(--pal-chip);' +
+      'box-shadow:inset 0 0 0 1px var(--pal-line);transition:background .12s}' +
+      '#cjs-pal .chip:active{transform:scale(.97)}' +
+      '#cjs-pal .chip.sel{background:var(--pal-acc);color:var(--pal-onacc);box-shadow:none;font-weight:700}' +
+      '#cjs-pal .close{position:sticky;right:0;width:36px;height:30px;margin-left:auto;padding:0;border-radius:15px;' +
+      'background:var(--pal-bg);color:var(--pal-sub);font-size:16px}' +
       'body.cjs-has-pal{position:fixed;left:0;right:0;top:0;margin:0}';
     document.head.appendChild(css);
 
     var bar = document.createElement('div'); bar.id = 'cjs-pal';
-    var catRow = document.createElement('div'); catRow.className = 'row';
+    var tabRow = document.createElement('div'); tabRow.className = 'row tabs';
     var itemRow = document.createElement('div'); itemRow.className = 'row items';
-    bar.appendChild(itemRow); bar.appendChild(catRow);
+    bar.appendChild(tabRow); bar.appendChild(itemRow);
     document.body.appendChild(bar);
     document.body.classList.add('cjs-has-pal');
 
-    var tog = document.createElement('button'); tog.className = 'tog'; catRow.appendChild(tog);
-    var current = 0, collapsed = false;
-    try { collapsed = localStorage.getItem('cjs-pal-collapsed') === '1'; } catch (e) {}
+    var current = 0, visible = true, lastTool = null, nudgeTimer = null;
+    try { visible = localStorage.getItem('cjs-pal-hidden') !== '1'; } catch (e) {}
 
-    function layout() {
-      document.body.style.bottom = bar.offsetHeight + 'px';
-      window.dispatchEvent(new Event('resize'));   // make the simulator re-measure its canvas
+    // Make the simulator re-measure its canvas (it only re-measures on width changes by itself).
+    function relayout() {
+      document.body.style.bottom = (visible ? bar.offsetHeight : 0) + 'px';
+      window.dispatchEvent(new Event('resize'));
+      clearTimeout(nudgeTimer);
+      nudgeTimer = setTimeout(function () {
+        var cv = document.querySelector('canvas');
+        if (cv) cv.width = cv.width + 1;          // forces CirSim.checkCanvasSize() -> setCanvasSize()
+        window.dispatchEvent(new Event('resize'));
+      }, 60);
     }
+    function setVisible(v, persist) {
+      visible = !!v;
+      bar.classList.toggle('hidden', !visible);
+      if (persist !== false) { try { localStorage.setItem('cjs-pal-hidden', visible ? '0' : '1'); } catch (e) {} }
+      relayout();
+      A.onPaletteVisible(visible);
+    }
+    window.cjsPalette = {
+      toggle: function () { setVisible(!visible); },
+      show: function () { setVisible(true); },
+      hide: function () { setVisible(false); },
+      isVisible: function () { return visible; }
+    };
+
     function renderItems() {
       itemRow.textContent = '';
       cats[current].items.forEach(function (it) {
-        var b = document.createElement('button'); b.textContent = it.label; b.dataset.id = it.id;
+        var b = document.createElement('button'); b.className = 'chip';
+        b.textContent = it.label; b.dataset.id = it.id;
         b.onclick = function () { sim.selectTool(it.id); sync(); };
         itemRow.appendChild(b);
       });
+      itemRow.scrollLeft = 0;
       sync();
     }
     function sync() {
       var act = sim.getActiveTool();
       Array.prototype.forEach.call(itemRow.children, function (b) { b.classList.toggle('sel', b.dataset.id === act); });
+      if (act !== lastTool) {
+        lastTool = act;
+        A.onTool(act, byId[act] ? byId[act].label : act);
+      }
     }
-    var catBtns = cats.map(function (c, i) {
-      var b = document.createElement('button'); b.className = 'cat'; b.textContent = c.name;
-      b.onclick = function () { current = i; refreshCats(); renderItems(); };
-      catRow.appendChild(b); return b;
+    var tabBtns = cats.map(function (c, i) {
+      var b = document.createElement('button'); b.className = 'tab'; b.textContent = c.name;
+      b.onclick = function () { current = i; refreshTabs(); renderItems(); };
+      tabRow.appendChild(b); return b;
     });
-    function refreshCats() { catBtns.forEach(function (b, i) { b.classList.toggle('sel', i === current); }); }
-    function applyCollapsed() {
-      bar.classList.toggle('collapsed', collapsed);
-      tog.textContent = collapsed ? '\u25BC' : '\u25B2';
-      tog.title = collapsed ? 'Show components' : 'Hide components';
-      layout();
-    }
-    tog.onclick = function () {
-      collapsed = !collapsed;
-      try { localStorage.setItem('cjs-pal-collapsed', collapsed ? '1' : '0'); } catch (e) {}
-      applyCollapsed();
-    };
-    refreshCats(); renderItems(); applyCollapsed();
-    setInterval(sync, 500);
+    var closeBtn = document.createElement('button'); closeBtn.className = 'close';
+    closeBtn.textContent = '\u2715'; closeBtn.title = 'Hide components';
+    closeBtn.onclick = function () { setVisible(false); };
+    tabRow.appendChild(closeBtn);
+    function refreshTabs() { tabBtns.forEach(function (b, i) { b.classList.toggle('sel', i === current); }); }
+
+    refreshTabs(); renderItems(); setVisible(visible, false);
+    setInterval(sync, 400);
+    // The bar's height can change once fonts/layout settle.
+    setTimeout(function () { if (visible) relayout(); }, 500);
   }
 })();

@@ -5,12 +5,12 @@ The simulation engine is the original Java/GWT code compiled to JavaScript — r
 of simulator by hand would be error-prone — and it runs **offline** inside a WebView.
 Everything around it is native Kotlin / Material 3:
 
-* Toolbar: Run/Pause (icon follows sim state), Reset, Undo, Redo
+* Top bar: quick tools **Select / Wire / Ground** (active one is highlighted, its name shows as the title), Components toggle, Run/Pause, Undo, Redo. The ⋮ menu has Select & Move (Drag all/row/column/selected/post), Reset, files, etc.
 * Overflow: Open file, Save to file, Share circuit (system pickers / share sheet), Keep screen on, Full screen, About
 * Edge-to-edge layout, display-cutout and keyboard insets, light/dark system theme
 * Native dialogs for JS alert/confirm/prompt, file chooser, blob downloads (Export, CSV, audio) → "Save as" picker
 * Back button (exit full screen / press twice to exit), autosave & restore of the current circuit
-* **Touch palette** at the bottom (white bar, thumb-reachable): every Draw-menu component (133 items) as large scrollable chips grouped by category (Common, Passive, Sources, Outputs, Active, Blocks, Gates, Chips, Analog, Move/Select); tap to pick, then drag on the canvas to place. Collapsible with the ▲ button.
+* **Touch palette** at the bottom (white bar, thumb-reachable): every Draw-menu component (133 items) as large scrollable chips grouped by category (Common, Passive, Sources, Outputs, Active, Blocks, Gates, Chips, Analog, Move/Select); tap to pick, then drag on the canvas to place. Hide it with ✕ (or the grid icon in the top bar): when hidden it takes **no** space and the simulator canvas/scopes are re-measured, so nothing is cut off.
 * Autosave: the current circuit (including opened files) is written to app storage while you work and restored on next launch
 * Long-press (right-click menu) no longer gets cancelled by small finger wobble
 * Pinch-zoom and drag are handled by the simulator's own touch code; viewport is mobile-sized

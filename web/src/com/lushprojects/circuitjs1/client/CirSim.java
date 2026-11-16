@@ -303,7 +303,9 @@ MouseOutHandler, MouseWheelHandler {
     }-*/;
 
     void checkCanvasSize() {
-        if (cv.getCoordinateSpaceWidth() != (int) (canvasWidth * devicePixelRatio()))
+        // (Android wrapper) also re-measure when only the height changed, e.g. the bottom palette was shown/hidden
+        int wantedHeight = Math.max(0, (int) RootLayoutPanel.get().getOffsetHeight() - MENUBARHEIGHT);
+        if (cv.getCoordinateSpaceWidth() != (int) (canvasWidth * devicePixelRatio()) || wantedHeight != canvasHeight)
             setCanvasSize();
     }
 

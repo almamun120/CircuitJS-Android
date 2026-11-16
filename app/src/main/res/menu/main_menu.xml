@@ -1,14 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!-- quick tools -->
+    <item android:id="@+id/action_select" android:title="@string/tool_select"
+        android:icon="@drawable/ic_select" app:showAsAction="always" />
+    <item android:id="@+id/action_wire" android:title="@string/tool_wire"
+        android:icon="@drawable/ic_wire" app:showAsAction="always" />
+    <item android:id="@+id/action_ground" android:title="@string/tool_ground"
+        android:icon="@drawable/ic_ground" app:showAsAction="always" />
+    <item android:id="@+id/action_palette" android:title="@string/components"
+        android:icon="@drawable/ic_palette" app:showAsAction="ifRoom" />
+    <!-- simulation -->
     <item android:id="@+id/action_run" android:title="@string/pause"
         android:icon="@drawable/ic_pause" app:showAsAction="always" />
-    <item android:id="@+id/action_reset" android:title="@string/reset"
-        android:icon="@drawable/ic_reset" app:showAsAction="always" />
     <item android:id="@+id/action_undo" android:title="@string/undo"
         android:icon="@drawable/ic_undo" app:showAsAction="always" />
     <item android:id="@+id/action_redo" android:title="@string/redo"
-        android:icon="@drawable/ic_redo" app:showAsAction="always" />
+        android:icon="@drawable/ic_redo" app:showAsAction="ifRoom" />
+    <!-- overflow (3 dots) -->
+    <item android:id="@+id/action_move_menu" android:title="@string/select_move" app:showAsAction="never">
+        <menu>
+            <item android:id="@+id/action_tool_select" android:title="@string/tool_select" />
+            <item android:id="@+id/action_tool_dragall" android:title="@string/drag_all" />
+            <item android:id="@+id/action_tool_dragrow" android:title="@string/drag_row" />
+            <item android:id="@+id/action_tool_dragcol" android:title="@string/drag_col" />
+            <item android:id="@+id/action_tool_dragsel" android:title="@string/drag_sel" />
+            <item android:id="@+id/action_tool_dragpost" android:title="@string/drag_post" />
+        </menu>
+    </item>
+    <item android:id="@+id/action_reset" android:title="@string/reset" app:showAsAction="never" />
     <item android:id="@+id/action_open" android:title="@string/open_file" app:showAsAction="never" />
     <item android:id="@+id/action_save" android:title="@string/save_file" app:showAsAction="never" />
     <item android:id="@+id/action_share" android:title="@string/share_circuit" app:showAsAction="never" />

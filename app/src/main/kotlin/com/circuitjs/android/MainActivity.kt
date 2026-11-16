@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -36,6 +37,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import androidx.webkit.WebViewAssetLoader
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
@@ -165,12 +167,48 @@ class MainActivity : AppCompatActivity() {
         toolbar.inflateMenu(R.menu.main_menu)
         toolbar.menu.findItem(R.id.action_keep_on).isChecked = prefs.getBoolean("keep_on", true)
         toolbar.setOnMenuItemClickListener(::onMenuItem)
+        updateTool("Select", getString(R.string.app_name))
+        updatePaletteState(true)
+    }
+
+    private fun selectTool(id: String) = js("CircuitJS1.selectTool(${jsString(id)})")
+
+    private fun themeColor(attr: Int, fallback: Int) = MaterialColors.getColor(toolbar, attr, fallback)
+
+    /** Highlights the quick-tool icon of the active tool and shows its name as the bar title. */
+    private fun updateTool(id: String, label: String) {
+        val normal = themeColor(androidx.appcompat.R.attr.colorControlNormal, 0xFF444444.toInt())
+        val accent = themeColor(androidx.appcompat.R.attr.colorPrimary, 0xFF0E7490.toInt())
+        fun tint(itemId: Int, on: Boolean) {
+            toolbar.menu.findItem(itemId)?.iconTintList = ColorStateList.valueOf(if (on) accent else normal)
+        }
+        tint(R.id.action_select, id == "Select" || id.startsWith("Drag"))
+        tint(R.id.action_wire, id == "WireElm")
+        tint(R.id.action_ground, id == "GroundElm")
+        toolbar.title = if (id == "Select" || id.isBlank()) getString(R.string.app_name) else label
+    }
+
+    private fun updatePaletteState(visible: Boolean) {
+        val normal = themeColor(androidx.appcompat.R.attr.colorControlNormal, 0xFF444444.toInt())
+        val accent = themeColor(androidx.appcompat.R.attr.colorPrimary, 0xFF0E7490.toInt())
+        toolbar.menu.findItem(R.id.action_palette)?.iconTintList =
+            ColorStateList.valueOf(if (visible) accent else normal)
     }
 
     private fun onMenuItem(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_run -> js("CircuitJS1.setSimRunning(!CircuitJS1.isRunning())")
             R.id.action_reset -> js("CircuitJS1.resetSim()")
+            R.id.action_select, R.id.action_tool_select -> selectTool("Select")
+            R.id.action_wire -> selectTool("WireElm")
+            R.id.action_ground -> selectTool("GroundElm")
+            R.id.action_tool_dragall -> selectTool("DragAll")
+            R.id.action_tool_dragrow -> selectTool("DragRow")
+            R.id.action_tool_dragcol -> selectTool("DragColumn")
+            R.id.action_tool_dragsel -> selectTool("DragSelected")
+            R.id.action_tool_dragpost -> selectTool("DragPost")
+            R.id.action_palette ->
+                webView.evaluateJavascript("(window.cjsPalette&&cjsPalette.toggle())", null)
             R.id.action_undo -> js("CircuitJS1.undo()")
             R.id.action_redo -> js("CircuitJS1.redo()")
             R.id.action_open -> openDocument.launch(arrayOf("*/*"))
@@ -369,6 +407,17 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun getAutosave(): String =
             runCatching { if (autosaveFile.exists()) autosaveFile.readText() else "" }.getOrDefault("")
+
+        /** Active drawing tool changed (id like "WireElm", "Select", "DragAll"). */
+        @JavascriptInterface
+        fun onTool(id: String, label: String) {
+            runOnUiThread { updateTool(id, label) }
+        }
+
+        @JavascriptInterface
+        fun onPaletteVisible(visible: Boolean) {
+            runOnUiThread { updatePaletteState(visible) }
+        }
 
         @JavascriptInterface
         fun onRunState(running: Boolean) {

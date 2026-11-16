@@ -2,5 +2,28 @@
     <style name="Theme.CircuitJS" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/brand</item>
         <item name="android:windowBackground">?attr/colorSurface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="toolbarStyle">@style/Widget.CircuitJS.Toolbar</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.CircuitJS.Medium</item>
+    </style>
+
+    <style name="Widget.CircuitJS.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">?attr/colorSurface</item>
+        <item name="titleTextAppearance">@style/TextAppearance.CircuitJS.Title</item>
+        <item name="titleMarginStart">4dp</item>
+        <item name="contentInsetStart">12dp</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <style name="TextAppearance.CircuitJS.Title" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textStyle">bold</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="ShapeAppearance.CircuitJS.Medium" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
     </style>
 </resources>
