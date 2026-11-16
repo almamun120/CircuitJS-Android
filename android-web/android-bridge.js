@@ -60,6 +60,37 @@
   // Prevent text selection / long-press callouts on the drawing area.
   document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
+  // The simulator only re-measures its canvas when the WIDTH changes. Whenever the viewport height
+  // changes (bottom sheet, native option strip, keyboard) nudge it so the scopes are never cut off.
+  function nudgeCanvas() {
+    var cv = document.querySelector('canvas');
+    if (cv) cv.width = cv.width + 1;          // makes CirSim.checkCanvasSize() call setCanvasSize()
+    window.dispatchEvent(new Event('resize'));
+  }
+  var lastInnerH = window.innerHeight, resizeTimer = null;
+  window.addEventListener('resize', function () {
+    if (window.innerHeight !== lastInnerH) {
+      lastInnerH = window.innerHeight;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(nudgeCanvas, 80);
+    }
+  });
+
+  // Delete the selected element(s): same as pressing the Delete key on a desktop.
+  window.cjsDelete = function () {
+    var sim = window.CircuitJS1;
+    if (sim && sim.deleteSelected) { sim.deleteSelected(); return; }
+    function fire(type) {
+      var e = new KeyboardEvent(type, { key: 'Delete', code: 'Delete', keyCode: 46, which: 46, bubbles: true, cancelable: true });
+      try {
+        Object.defineProperty(e, 'keyCode', { get: function () { return 46; } });
+        Object.defineProperty(e, 'which', { get: function () { return 46; } });
+      } catch (x) {}
+      document.body.dispatchEvent(e);
+    }
+    fire('keydown'); fire('keyup');
+  };
+
   // ------------------------------------------------------------------------------------
   // Touch palette (bottom sheet). Data comes from CircuitJS1.getPalette(); tapping a chip calls
   // CircuitJS1.selectTool(id). Fully removed from the layout when hidden (no leftover strip) and the
@@ -110,8 +141,10 @@
       'box-shadow:inset 0 0 0 1px var(--pal-line);transition:background .12s}' +
       '#cjs-pal .chip:active{transform:scale(.97)}' +
       '#cjs-pal .chip.sel{background:var(--pal-acc);color:var(--pal-onacc);box-shadow:none;font-weight:700}' +
-      '#cjs-pal .close{position:sticky;right:0;width:36px;height:30px;margin-left:auto;padding:0;border-radius:15px;' +
-      'background:var(--pal-bg);color:var(--pal-sub);font-size:16px}' +
+      '#cjs-fab{position:fixed;right:12px;bottom:12px;z-index:60;width:46px;height:46px;border-radius:23px;border:0;padding:0;' +
+      'display:flex;align-items:center;justify-content:center;background:var(--pal-acc);color:var(--pal-onacc);' +
+      'box-shadow:0 3px 10px rgba(0,0,0,.32);-webkit-tap-highlight-color:transparent}' +
+      '#cjs-fab:active{transform:scale(.94)}' +
       'body.cjs-has-pal{position:fixed;left:0;right:0;top:0;margin:0}';
     document.head.appendChild(css);
 
@@ -122,12 +155,22 @@
     document.body.appendChild(bar);
     document.body.classList.add('cjs-has-pal');
 
+    var GRID = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>';
+    var DOWN = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    var fab = document.createElement('button'); fab.id = 'cjs-fab'; fab.setAttribute('aria-label', 'Components');
+    document.body.appendChild(fab);
     var current = 0, visible = true, lastTool = null, nudgeTimer = null;
     try { visible = localStorage.getItem('cjs-pal-hidden') !== '1'; } catch (e) {}
 
     // Make the simulator re-measure its canvas (it only re-measures on width changes by itself).
+    function placeFab() {
+      fab.style.bottom = (visible ? bar.offsetHeight + 10 : 12) + 'px';
+      fab.innerHTML = visible ? DOWN : GRID;
+      fab.title = visible ? 'Hide components' : 'Show components';
+    }
     function relayout() {
       document.body.style.bottom = (visible ? bar.offsetHeight : 0) + 'px';
+      placeFab();
       window.dispatchEvent(new Event('resize'));
       clearTimeout(nudgeTimer);
       nudgeTimer = setTimeout(function () {
@@ -174,10 +217,7 @@
       b.onclick = function () { current = i; refreshTabs(); renderItems(); };
       tabRow.appendChild(b); return b;
     });
-    var closeBtn = document.createElement('button'); closeBtn.className = 'close';
-    closeBtn.textContent = '\u2715'; closeBtn.title = 'Hide components';
-    closeBtn.onclick = function () { setVisible(false); };
-    tabRow.appendChild(closeBtn);
+    fab.onclick = function () { setVisible(!visible); };
     function refreshTabs() { tabBtns.forEach(function (b, i) { b.classList.toggle('sel', i === current); }); }
 
     refreshTabs(); renderItems(); setVisible(visible, false);

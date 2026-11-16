@@ -20,6 +20,51 @@
         android:indeterminate="true"
         app:trackThickness="2dp" />
 
+    <HorizontalScrollView
+        android:id="@+id/moveBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:paddingHorizontal="10dp"
+        android:paddingBottom="4dp"
+        android:scrollbars="none">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/moveChips"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:chipSpacingHorizontal="6dp"
+            app:selectionRequired="true"
+            app:singleLine="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_select" style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/tool_select" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_dragall" style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/drag_all" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_dragrow" style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/drag_row" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_dragcol" style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/drag_col" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_dragsel" style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/drag_sel" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_dragpost" style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/drag_post" />
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"

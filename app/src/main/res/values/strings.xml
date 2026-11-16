@@ -11,6 +11,7 @@
     <string name="keep_screen_on">Keep screen on</string>
     <string name="fullscreen">Full screen</string>
     <string name="about">About</string>
+    <string name="delete">Delete selected</string>
     <string name="tool_select">Select</string>
     <string name="tool_wire">Wire</string>
     <string name="tool_ground">Ground</string>

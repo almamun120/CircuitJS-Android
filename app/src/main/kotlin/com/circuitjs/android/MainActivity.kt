@@ -37,6 +37,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import androidx.webkit.WebViewAssetLoader
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -55,6 +56,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var toolbar: MaterialToolbar
     private lateinit var progress: LinearProgressIndicator
+    private lateinit var moveBar: View
+    private lateinit var moveChips: ChipGroup
+    private var moveMode = true
+
+    private val chipTools by lazy {
+        mapOf(
+            R.id.chip_select to "Select", R.id.chip_dragall to "DragAll",
+            R.id.chip_dragrow to "DragRow", R.id.chip_dragcol to "DragColumn",
+            R.id.chip_dragsel to "DragSelected", R.id.chip_dragpost to "DragPost"
+        )
+    }
 
     private val prefs by lazy { getSharedPreferences("settings", Context.MODE_PRIVATE) }
     private val autosaveFile by lazy { File(filesDir, "autosave.circuitjs.txt") }
@@ -167,8 +179,12 @@ class MainActivity : AppCompatActivity() {
         toolbar.inflateMenu(R.menu.main_menu)
         toolbar.menu.findItem(R.id.action_keep_on).isChecked = prefs.getBoolean("keep_on", true)
         toolbar.setOnMenuItemClickListener(::onMenuItem)
+        moveBar = findViewById(R.id.moveBar)
+        moveChips = findViewById(R.id.moveChips)
+        chipTools.forEach { (chipId, tool) ->
+            findViewById<View>(chipId).setOnClickListener { selectTool(tool) }
+        }
         updateTool("Select", getString(R.string.app_name))
-        updatePaletteState(true)
     }
 
     private fun selectTool(id: String) = js("CircuitJS1.selectTool(${jsString(id)})")
@@ -186,29 +202,24 @@ class MainActivity : AppCompatActivity() {
         tint(R.id.action_wire, id == "WireElm")
         tint(R.id.action_ground, id == "GroundElm")
         toolbar.title = if (id == "Select" || id.isBlank()) getString(R.string.app_name) else label
+
+        // Select / drag sub-options are only shown while a select or drag tool is active.
+        moveMode = id.isBlank() || id == "Select" || id.startsWith("Drag")
+        moveBar.isVisible = moveMode && !fullscreen
+        val chip = chipTools.entries.firstOrNull { it.value == id }?.key ?: R.id.chip_select
+        if (moveMode) moveChips.check(chip)
     }
 
-    private fun updatePaletteState(visible: Boolean) {
-        val normal = themeColor(androidx.appcompat.R.attr.colorControlNormal, 0xFF444444.toInt())
-        val accent = themeColor(androidx.appcompat.R.attr.colorPrimary, 0xFF0E7490.toInt())
-        toolbar.menu.findItem(R.id.action_palette)?.iconTintList =
-            ColorStateList.valueOf(if (visible) accent else normal)
-    }
 
     private fun onMenuItem(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_run -> js("CircuitJS1.setSimRunning(!CircuitJS1.isRunning())")
             R.id.action_reset -> js("CircuitJS1.resetSim()")
-            R.id.action_select, R.id.action_tool_select -> selectTool("Select")
+            R.id.action_select -> selectTool("Select")
             R.id.action_wire -> selectTool("WireElm")
             R.id.action_ground -> selectTool("GroundElm")
-            R.id.action_tool_dragall -> selectTool("DragAll")
-            R.id.action_tool_dragrow -> selectTool("DragRow")
-            R.id.action_tool_dragcol -> selectTool("DragColumn")
-            R.id.action_tool_dragsel -> selectTool("DragSelected")
-            R.id.action_tool_dragpost -> selectTool("DragPost")
-            R.id.action_palette ->
-                webView.evaluateJavascript("(window.cjsPalette&&cjsPalette.toggle())", null)
+            R.id.action_delete ->
+                webView.evaluateJavascript("(window.cjsDelete&&cjsDelete())", null)
             R.id.action_undo -> js("CircuitJS1.undo()")
             R.id.action_redo -> js("CircuitJS1.redo()")
             R.id.action_open -> openDocument.launch(arrayOf("*/*"))
@@ -253,6 +264,7 @@ class MainActivity : AppCompatActivity() {
     private fun setFullscreen(on: Boolean) {
         fullscreen = on
         toolbar.isVisible = !on
+        moveBar.isVisible = !on && moveMode
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         if (on) {
             controller.systemBarsBehavior =
@@ -416,7 +428,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun onPaletteVisible(visible: Boolean) {
-            runOnUiThread { updatePaletteState(visible) }
+            // the floating button inside the page handles this; kept so the JS call never fails
         }
 
         @JavascriptInterface

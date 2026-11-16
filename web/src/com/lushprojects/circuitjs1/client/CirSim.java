@@ -6481,6 +6481,7 @@ MouseOutHandler, MouseWheelHandler {
 	        getPalette: $entry(function() { return that.@com.lushprojects.circuitjs1.client.CirSim::getPaletteJson()(); } ),
 	        selectTool: $entry(function(id) { that.@com.lushprojects.circuitjs1.client.CirSim::menuPerformed(Ljava/lang/String;Ljava/lang/String;)("main", id); } ),
 	        getActiveTool: $entry(function() { return that.@com.lushprojects.circuitjs1.client.CirSim::mouseModeStr; } ),
+	        deleteSelected: $entry(function() { that.@com.lushprojects.circuitjs1.client.CirSim::menuPerformed(Ljava/lang/String;Ljava/lang/String;)("key", "delete"); } ),
 	        // -------------------------------------
 	        getTime: $entry(function() { return that.@com.lushprojects.circuitjs1.client.CirSim::t; } ),
 	        getTimeStep: $entry(function() { return that.@com.lushprojects.circuitjs1.client.CirSim::timeStep; } ),
